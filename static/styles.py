@@ -1,5 +1,5 @@
 import qdarktheme
-from variables import (DARKER_PRIMARY_COLOR, DARKEST_PRIMARY_COLOR, PRIMARY_COLOR)
+from static.variables import (DARKER_PRIMARY_COLOR, DARKEST_PRIMARY_COLOR, PRIMARY_COLOR)
 
 qss = f"""
     PushButton[cssClass="specialButton"] {{
