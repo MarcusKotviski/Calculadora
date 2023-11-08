@@ -1,3 +1,4 @@
+import math
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Slot
@@ -76,11 +77,8 @@ class ButtonsGrid(QGridLayout):
         if text == 'C':
             self._connectButtonClicked(button, self._clear)
 
-        if text in '+-/*':
-            self._connectButtonClicked(
-                button,
-                self._makeSlot(self._operatorClicked, button)
-            )
+        if text in '+-/*^':
+            self._connectButtonClicked(button,self._makeSlot(self._operatorClicked, button))
 
         if text in '=':
             self._connectButtonClicked(button, self._eq)
@@ -129,13 +127,22 @@ class ButtonsGrid(QGridLayout):
         
         self._right = float(displayText)
         self.equation = f'{self._left} {self._op} {self._right}'
+        result = 'error'
 
         try:
-            result = eval(self.equation)
+            if '^' in self.equation and isinstance(self._left, float):
+                result = math.pow(self._left, self._right)
+            else:
+                result = eval(self.equation)
         except ZeroDivisionError:
+            ...
+        except OverflowError:
             ...
 
         self.display.clear()
         self.info.setText(f'{self.equation} = {result}')
         self._left = result
         self._right = None
+
+        if result != 'error':
+            self._left = None
