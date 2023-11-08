@@ -82,6 +82,9 @@ class ButtonsGrid(QGridLayout):
                 self._makeSlot(self._operatorClicked, button)
             )
 
+        if text in '=':
+            self._connectButtonClicked(button, self._eq)
+
     def _makeSlot(self, func, *args, **kwargs):
         @ Slot(bool)
         def realSlot(_):
@@ -117,3 +120,22 @@ class ButtonsGrid(QGridLayout):
 
         self._op = buttonText
         self.equation = f'{self._left} {self._op} ??'
+
+    def _eq(self):
+        displayText = self.display.text()
+
+        if not isValidNumber(displayText):
+            return
+        
+        self._right = float(displayText)
+        self.equation = f'{self._left} {self._op} {self._right}'
+
+        try:
+            result = eval(self.equation)
+        except ZeroDivisionError:
+            ...
+
+        self.display.clear()
+        self.info.setText(f'{self.equation} = {result}')
+        self._left = result
+        self._right = None
