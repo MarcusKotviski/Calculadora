@@ -14,6 +14,7 @@ class Button(QPushButton):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.configStyle()
+
     def configStyle(self):
         font = self.font()
         font.setPixelSize(MEDIUM_FONT_SIZE)
@@ -32,15 +33,22 @@ class ButtonsGrid(QGridLayout):
             ['1', '2', '3', '+'],
             ['',  '0', '.', '='],
         ]
+
         self.display = display
         self.info = info
         self._equation = ''
+        self._equationInitialValue = ''
+        self._left = None
+        self._right = None
+        self._op = None
+
+        self.equation = self._equationInitialValue
         self._makeGrid()
 
     @property
     def equation(self):
         return self._equation
-
+    
     @equation.setter
     def equation(self, value):
         self._equation = value
@@ -50,22 +58,62 @@ class ButtonsGrid(QGridLayout):
         for rowNumber, rowData in enumerate(self._gridMask):
             for colNumber, buttonText in enumerate(rowData):
                 button = Button(buttonText)
+
                 if not isNumOrDot(buttonText) and not isEmpty(buttonText):
                     button.setProperty('cssClass', 'specialButton')
+                    self._configSpecialButton(button)
+
                 self.addWidget(button, rowNumber, colNumber)
-                buttonSlot = self._makeButtonDisplaySlot(
-                    self._insertButtonTextToDisplay,
-                    button,
-                )
-                button.clicked.connect(buttonSlot)  # type: ignore
-    def _makeButtonDisplaySlot(self, func, *args, **kwargs):
-        @Slot(bool)
+                slot = self._makeSlot(self._insertButtonTextToDisplay, button)
+                self._connectButtonClicked(button, slot)
+
+    def _connectButtonClicked(self, button, slot):
+        button.clicked.connect(slot)
+
+    def _configSpecialButton(self, button):
+        text = button.text()
+
+        if text == 'C':
+            self._connectButtonClicked(button, self._clear)
+
+        if text in '+-/*':
+            self._connectButtonClicked(
+                button,
+                self._makeSlot(self._operatorClicked, button)
+            )
+
+    def _makeSlot(self, func, *args, **kwargs):
+        @ Slot(bool)
         def realSlot(_):
             func(*args, **kwargs)
         return realSlot
+    
     def _insertButtonTextToDisplay(self, button):
         buttonText = button.text()
         newDisplayValue = self.display.text() + buttonText
+
         if not isValidNumber(newDisplayValue):
             return
+        
         self.display.insert(buttonText)
+
+    def _clear(self):
+        self._left = None
+        self._right = None
+        self._op = None
+        self.equation = self._equationInitialValue
+        self.display.clear()
+
+    def _operatorClicked(self, button):
+        buttonText = button.text()
+        displayText = self.display.text()
+        self.display.clear()
+
+        if not isValidNumber(displayText) and self._left is None:
+            return
+
+        if self._left is None:
+            self._left = float(displayText)
+
+        self._op = buttonText
+        self.equation = f'{self._left} {self._op} ??'
